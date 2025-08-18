@@ -1,0 +1,98 @@
+{
+  "login": "Iniciar Sessão",
+  "username": "Nome de utilizador",
+  "usernameField": "Campo do nome de utilizador",
+  "password": "Palavra-passe",
+  "passwordField": "Campo da palavra-passe",
+  "loginButton": "Botão de iniciar sessão",
+  "loginButtonText": "Entrar",
+  "noAccount": "Ainda não tens conta? Criar conta",
+  "error": "Erro",
+  "fillUsernamePassword": "Preencha o nome de utilizador e a palavra-passe.",
+  "incorrectUsernamePassword": "Nome de utilizador ou palavra-passe incorretos.",
+  "createAccount": "Criar Conta",
+  "name": "Nome",
+  "usernameExists": "Este nome de utilizador já existe.",
+  "registerFailed": "Não foi possível concluir o registo.",
+  "registerButton": "Registar",
+  "registering": "A registar...",
+  "register": "Registar",
+  "alreadyHaveAccount": "Já tem conta? Inicie sessão",
+  "calendarMessage": "Agenda aqui a tua marcação",
+  "search": "Pesquisa",
+  "profile": "Perfil",
+  "settings": "Definições",
+  "language": "Idioma",
+  "darkTheme": "Tema escuro",
+  "enableNotifications": "Ativar notificações",
+  "account": "Conta",
+  "editProfile": "Editar perfil",
+  "changePassword": "Alterar palavra-passe",
+  "logout": "Terminar sessão",
+  "about": "Sobre",
+  "appVersion": "Versão da aplicação",
+  "privacyPolicy": "Política de privacidade",
+  "termsOfUse": "Termos de utilização",
+  "welcome": "Olá",
+  "notifications": {
+    "label": "Notificações",
+    "title": "Notificações",
+    "empty": "Nenhuma notificação",
+    "newMessage": "Nova mensagem de {{name}}",
+    "updateAvailable": "Atualização disponível",
+    "eventTomorrow": "Evento amanhã às {{time}}"
+  },
+  "modal": {
+    "close": "Fechar modal"
+  },
+  "home": "Início",
+  "calendar": "Calendário",
+  "newTask": "Nova Tarefa",
+  "taskName": "Nome da tarefa",
+  "startTime": "Hora de início",
+  "endTime": "Hora de fim",
+  "select": "Selecionar...",
+  "cancel": "Cancelar",
+  "save": "Guardar",
+  "tasksTitle": "Tarefas",
+  "noTasks": "Nenhuma tarefa guardada",
+  "today": "Hoje",
+  "taskNameRequired": "Nome da tarefa é obrigatório",
+  "startTimeRequired": "Hora de início é obrigatória",
+  "startTimeInvalid": "Hora de início inválida",
+  "endTimeRequired": "Hora de fim é obrigatória",
+  "endTimeInvalid": "Hora de fim inválida",
+  "homeGreeting": "Impulsione o seu negócio com uma loja online personalizada e profissional.",
+  "homeProposal": "Somos parceiros oficiais Shopify — criamos, configuramos e lançamos a sua loja e-commerce para garantir o seu sucesso.",
+  "startButton": "Começar",
+  "startButtonText": "Quero começar agora!",
+  "projects": {
+    "title": "Projetos",
+    "visitSite": "Visitar site",
+    "back": "Voltar",
+    "marysWorld": {
+      "title": "Mary's World",
+      "description": "Loja de roupa feminina"
+    },
+    "maulihandmade": {
+      "title": "Mauli Handmade",
+      "description": "Acessórios feitos à mão"
+    },
+    "qChef": {
+      "title": "Q'Chef",
+      "description": "Serviço doméstico de cozinha"
+    },
+    "vanessaKloset": {
+      "title": "Vanessa Kloset",
+      "description": "Roupa de cerimónia"
+    },
+    "mimuKidsStore": {
+      "title": "Mimu Kids Store",
+      "description": "Roupa para crianças"
+    },
+    "jafversatil": {
+      "title": "JAF Versátil",
+      "description": "Roupa para Adultos"
+    }
+  }
+}

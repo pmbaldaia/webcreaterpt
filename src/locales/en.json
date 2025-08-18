@@ -1,0 +1,98 @@
+{
+  "login": "Login",
+  "username": "Username",
+  "usernameField": "Username field",
+  "password": "Password",
+  "passwordField": "Password field",
+  "loginButton": "Login button",
+  "loginButtonText": "Sign In",
+  "noAccount": "Don't have an account? Create one",
+  "error": "Error",
+  "fillUsernamePassword": "Please fill in username and password.",
+  "incorrectUsernamePassword": "Incorrect username or password.",
+  "createAccount": "Create Account",
+  "name": "Name",
+  "usernameExists": "This username already exists.",
+  "registerFailed": "Registration failed.",
+  "registerButton": "Register",
+  "registering": "Registering...",
+  "register": "Register",
+  "alreadyHaveAccount": "Already have an account? Sign in",
+  "calendarMessage": "Schedule your appointment here",
+  "search": "Search",
+  "profile": "Profile",
+  "settings": "Settings",
+  "language": "Language",
+  "darkTheme": "Dark Theme",
+  "enableNotifications": "Enable Notifications",
+  "account": "Account",
+  "editProfile": "Edit Profile",
+  "changePassword": "Change Password",
+  "logout": "Logout",
+  "about": "About",
+  "appVersion": "App Version",
+  "privacyPolicy": "Privacy Policy",
+  "termsOfUse": "Terms of Use",
+  "welcome": "Hi",
+  "notifications": {
+    "label": "Notifications",
+    "title": "Notifications",
+    "empty": "No notifications",
+    "newMessage": "New message from {{name}}",
+    "updateAvailable": "Update available",
+    "eventTomorrow": "Event tomorrow at {{time}}"
+  },
+  "modal": {
+    "close": "Close modal"
+  },
+  "home": "Home",
+  "calendar": "Calendar",
+  "newTask": "New Task",
+  "taskName": "Task Name",
+  "startTime": "Start Time",
+  "endTime": "End Time",
+  "select": "Select...",
+  "cancel": "Cancel",
+  "save": "Save",
+  "tasksTitle": "Tasks",
+  "noTasks": "No tasks saved",
+  "today": "Today",
+  "taskNameRequired": "Task name is required",
+  "startTimeRequired": "Start time is required",
+  "startTimeInvalid": "Start time is invalid",
+  "endTimeRequired": "End time is required",
+  "endTimeInvalid": "End time is invalid",
+  "homeGreeting": "Boost your business with a personalized and professional online store.",
+  "homeProposal": "We are official Shopify partners — we create, configure, and launch your e-commerce store to ensure your success.",
+  "startButton": "Get Started",
+  "startButtonText": "I want to start now!",
+  "projects": {
+    "title": "Projects",
+    "visitSite": "Visit site",
+    "back": "Back",
+    "marysWorld": {
+      "title": "Mary's World",
+      "description": "Women's clothing store"
+    },
+    "maulihandmade": {
+      "title": "Mauli Handmade",
+      "description": "Handmade accessories"
+    },
+    "qChef": {
+      "title": "Q'Chef",
+      "description": "Home cooking service"
+    },
+    "vanessaKloset": {
+      "title": "Vanessa Kloset",
+      "description": "Ceremonial clothing"
+    },
+    "mimuKidsStore": {
+      "title": "Mimu Kids Store",
+      "description": "Children's clothing"
+    },
+    "jafversatil": {
+      "title": "JAF Versátil",
+      "description": "Adult Clothing"
+    }
+  }
+}

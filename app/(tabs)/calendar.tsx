@@ -1,32 +1,34 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  SectionList,
-  TouchableOpacity,
-  useColorScheme,
-  Modal,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Calendar } from "react-native-calendars";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useThemeColor } from "@/hooks/useThemeColor";
-import { useTranslation } from "react-i18next";
+import { useAuth } from "@/hooks/AuthContext";
 import { useTheme } from "@/hooks/ThemeContext";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import {
+    CALENDAR_STORAGE_KEY,
+    initialCalendarTasks,
+    type DemoTask,
+} from "@/src/data/demoContent";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+    Modal,
+    SectionList,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { Calendar } from "react-native-calendars";
 
-const STORAGE_KEY = "@calendar_tasks";
+type TaskItem = DemoTask;
 
-type TaskItem = {
-  name: string;
-  start: string;
-  end: string;
-};
+const initialTasks = initialCalendarTasks;
 
 export default function CalendarScreen() {
   const { t } = useTranslation();
   const { theme: colorScheme } = useTheme();
+  const { authState } = useAuth();
 
   const background = useThemeColor({}, "background");
   const text = useThemeColor({}, "text");
@@ -35,8 +37,9 @@ export default function CalendarScreen() {
   const icon = useThemeColor({}, "icon");
 
   const today = new Date().toISOString().split("T")[0];
+
   const [selectedDate, setSelectedDate] = useState<string>(today);
-  const [tasks, setTasks] = useState<Record<string, TaskItem[]>>({});
+  const [tasks, setTasks] = useState<Record<string, TaskItem[]>>(initialTasks);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalDate, setModalDate] = useState<string>(today);
 
@@ -48,23 +51,33 @@ export default function CalendarScreen() {
   const [errorStartTime, setErrorStartTime] = useState<string | null>(null);
   const [errorEndTime, setErrorEndTime] = useState<string | null>(null);
 
+  const isAdmin = authState?.username?.toLowerCase() === "admin";
+  const currentUser = authState?.username || "demo";
+
   useEffect(() => {
     const loadTasks = async () => {
       try {
-        const stored = await AsyncStorage.getItem(STORAGE_KEY);
-        if (stored) setTasks(JSON.parse(stored));
-      } catch {}
+        const stored = await AsyncStorage.getItem(CALENDAR_STORAGE_KEY);
+        if (stored) {
+          setTasks(JSON.parse(stored));
+        } else {
+          setTasks(initialTasks);
+        }
+      } catch {
+        setTasks(initialTasks);
+      }
     };
     loadTasks();
   }, []);
 
   useEffect(() => {
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)).catch(() => {});
+    AsyncStorage.setItem(CALENDAR_STORAGE_KEY, JSON.stringify(tasks)).catch(
+      () => {},
+    );
   }, [tasks]);
 
-  const isValidTime = (time: string) => {
-    return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
-  };
+  const isValidTime = (time: string) =>
+    /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
 
   const handleAddTask = () => {
     let valid = true;
@@ -78,7 +91,7 @@ export default function CalendarScreen() {
 
     if (!startTime.trim()) {
       setErrorStartTime(
-        t("startTimeRequired") || "Hora de início é obrigatória"
+        t("startTimeRequired") || "Hora de início é obrigatória",
       );
       valid = false;
     } else if (!isValidTime(startTime.trim())) {
@@ -104,6 +117,7 @@ export default function CalendarScreen() {
       name: taskName.trim(),
       start: startTime,
       end: endTime,
+      owner: isAdmin ? "admin" : currentUser,
     };
 
     setTasks((prev) => {
@@ -113,6 +127,7 @@ export default function CalendarScreen() {
       return updated;
     });
 
+    setSelectedDate(modalDate);
     setTaskName("");
     setStartTime("");
     setEndTime("");
@@ -133,16 +148,13 @@ export default function CalendarScreen() {
   const formatTimeInput = (text: string) => {
     const cleaned = text.replace(/[^0-9]/g, "").slice(0, 4);
     if (cleaned.length <= 2) return cleaned;
-    return cleaned.slice(0, 2) + ":" + cleaned.slice(2);
+    return `${cleaned.slice(0, 2)}:${cleaned.slice(2)}`;
   };
 
-  const handleStartTimeChange = (text: string) => {
+  const handleStartTimeChange = (text: string) =>
     setStartTime(formatTimeInput(text));
-  };
-
-  const handleEndTimeChange = (text: string) => {
+  const handleEndTimeChange = (text: string) =>
     setEndTime(formatTimeInput(text));
-  };
 
   const calendarTheme = {
     backgroundColor: background,
@@ -157,12 +169,22 @@ export default function CalendarScreen() {
     textDisabledColor: icon,
   };
 
-  const taskSections = Object.entries(tasks)
-    .sort(([a], [b]) => (a > b ? -1 : 1))
-    .map(([date, data]) => ({
-      title: date,
-      data,
-    }));
+  const visibleTasks = Object.entries(tasks).reduce<Record<string, TaskItem[]>>(
+    (acc, [date, list]) => {
+      const filtered = isAdmin
+        ? list
+        : list.filter((task) => task.owner === currentUser);
+
+      if (filtered.length > 0) {
+        acc[date] = filtered;
+      }
+
+      return acc;
+    },
+    {},
+  );
+
+  const selectedTasks = visibleTasks[selectedDate] || [];
 
   const EmptyListComponent = () => (
     <View style={{ marginTop: 16, alignItems: "center" }}>
@@ -177,31 +199,14 @@ export default function CalendarScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: background }]}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 12,
-        }}
-      >
-        <Text style={[styles.dateText, { color: text }]}>
-          {`📅 ${t("today")}: ${today}`}
-        </Text>
+      <View style={styles.headerRow}>
+        <Text
+          style={[styles.dateText, { color: text }]}
+        >{`📅 ${t("today")}: ${today}`}</Text>
         <TouchableOpacity
-          style={{
-            backgroundColor: tint,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            paddingVertical: 6,
-            paddingHorizontal: 12,
-            marginTop: 10,
-            minWidth: 110,
-            borderRadius: 8,
-          }}
+          style={styles.addButton}
           onPress={() => {
-            setModalDate(today);
+            setModalDate(selectedDate);
             setTaskName("");
             setStartTime("");
             setEndTime("");
@@ -211,20 +216,17 @@ export default function CalendarScreen() {
             setModalVisible(true);
           }}
         >
-          <Text
-            style={{
-              color: "#fff",
-              fontWeight: "bold",
-              marginRight: 6,
-              fontSize: 14,
-            }}
-          >
+          <Text style={styles.addButtonText}>
             {t("newTask") || "Nova Tarefa"}
           </Text>
-          <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 18 }}>
-            ＋
-          </Text>
+          <Text style={styles.addButtonIcon}>＋</Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={[styles.summaryCard, { backgroundColor: icon }]}>
+        <Text style={styles.summaryText}>
+          {selectedTasks.length} tarefa(s) para {selectedDate}
+        </Text>
       </View>
 
       <Calendar
@@ -241,219 +243,101 @@ export default function CalendarScreen() {
       />
 
       <SectionList
-        sections={taskSections}
-        keyExtractor={(item, index) => item.name + index.toString()}
-        renderSectionHeader={({ section: { title } }) => (
-          <Text style={[styles.sectionHeader, { color: tint }]}>{title}</Text>
+        sections={[{ title: selectedDate, data: selectedTasks }]}
+        keyExtractor={(item, index) => `${item.name}-${index}`}
+        renderSectionHeader={() => (
+          <Text style={[styles.sectionHeader, { color: tint }]}>
+            {selectedDate}
+          </Text>
         )}
-        renderItem={({ item, index, section }) => (
+        renderItem={({ item, index }) => (
           <View
             style={[
-              styles.taskCard,
-              {
-                backgroundColor: colorScheme === "dark" ? "#2C2C2E" : "#fff",
-              },
+              styles.taskItem,
+              { backgroundColor: background, borderColor: icon },
             ]}
           >
-            <View>
-              <Text style={[styles.taskText, { color: text }]}>
-                • {item.name}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.taskName, { color: text }]}>
+                {item.name}
               </Text>
-              <Text style={[styles.timeText, { color: secondaryText }]}>
-                ⏰ {item.start} - {item.end}
+              <Text style={[styles.taskTime, { color: secondaryText }]}>
+                {item.start} - {item.end}
               </Text>
             </View>
             <TouchableOpacity
-              onPress={() => handleDeleteTask(section.title, index)}
+              onPress={() => handleDeleteTask(selectedDate, index)}
             >
-              <Text style={[styles.deleteText, { color: "#ff5555" }]}>✕</Text>
+              <Ionicons name="trash-outline" size={18} color={tint} />
             </TouchableOpacity>
           </View>
         )}
         ListEmptyComponent={EmptyListComponent}
+        style={styles.list}
       />
 
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { backgroundColor: background }]}>
+      <Modal
+        animationType="slide"
+        transparent
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: background }]}>
             <Text style={[styles.modalTitle, { color: text }]}>
               {t("newTask") || "Nova Tarefa"}
             </Text>
 
-            <Calendar
-              onDayPress={(day) => setModalDate(day.dateString)}
-              markedDates={{
-                [modalDate]: {
-                  selected: true,
-                  selectedColor: tint,
-                },
-              }}
-              style={styles.calendar}
-              theme={calendarTheme}
+            <TextInput
+              style={[styles.input, { color: text, borderColor: icon }]}
+              placeholder={t("taskName") || "Nome da tarefa"}
+              placeholderTextColor={secondaryText}
+              value={taskName}
+              onChangeText={setTaskName}
             />
+            {errorTaskName ? (
+              <Text style={styles.errorText}>{errorTaskName}</Text>
+            ) : null}
 
-            <View
-              style={[
-                styles.input,
-                {
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: 20,
-                  borderColor: errorTaskName ? "red" : secondaryText,
-                },
-              ]}
-            >
-              <Ionicons
-                name="create-outline"
-                size={16}
-                color={text}
-                style={{ marginHorizontal: 8 }}
-              />
-              <TextInput
-                style={{
-                  flex: 1,
-                  color: text,
-                  paddingVertical: 12,
-                }}
-                placeholder={t("taskName") || "Nome da tarefa"}
-                placeholderTextColor={secondaryText}
-                value={taskName}
-                onChangeText={setTaskName}
-                autoFocus
-              />
-            </View>
+            <TextInput
+              style={[styles.input, { color: text, borderColor: icon }]}
+              placeholder={t("startTime") || "Hora de início"}
+              placeholderTextColor={secondaryText}
+              value={startTime}
+              onChangeText={handleStartTimeChange}
+              keyboardType="numeric"
+            />
+            {errorStartTime ? (
+              <Text style={styles.errorText}>{errorStartTime}</Text>
+            ) : null}
 
-            {errorTaskName && (
-              <Text style={{ color: "red", marginBottom: 8 }}>
-                {errorTaskName}
-              </Text>
-            )}
+            <TextInput
+              style={[styles.input, { color: text, borderColor: icon }]}
+              placeholder={t("endTime") || "Hora de fim"}
+              placeholderTextColor={secondaryText}
+              value={endTime}
+              onChangeText={handleEndTimeChange}
+              keyboardType="numeric"
+            />
+            {errorEndTime ? (
+              <Text style={styles.errorText}>{errorEndTime}</Text>
+            ) : null}
 
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              <View style={{ flex: 1, marginRight: 8 }}>
-                <Text style={[styles.pickerLabel, { color: text }]}>
-                  {t("startTime") || "Hora de início"}
-                </Text>
-                <View
-                  style={[
-                    styles.input,
-                    {
-                      flexDirection: "row",
-                      alignItems: "center",
-                      borderColor: errorStartTime ? "red" : secondaryText,
-                      paddingVertical: 8,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={16}
-                    color={text}
-                    style={{ marginHorizontal: 8 }}
-                  />
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      color: text,
-                      paddingLeft: 4,
-                      paddingVertical: 4,
-                    }}
-                    placeholder="HH:mm"
-                    placeholderTextColor={secondaryText}
-                    value={startTime}
-                    onChangeText={handleStartTimeChange}
-                    keyboardType="numeric"
-                    maxLength={5}
-                  />
-                </View>
-                {errorStartTime && (
-                  <Text style={{ color: "red", marginBottom: 8 }}>
-                    {errorStartTime}
-                  </Text>
-                )}
-              </View>
-
-              <View style={{ flex: 1, marginLeft: 8 }}>
-                <Text style={[styles.pickerLabel, { color: text }]}>
-                  {t("endTime") || "Hora de fim"}
-                </Text>
-                <View
-                  style={[
-                    styles.input,
-                    {
-                      flexDirection: "row",
-                      alignItems: "center",
-                      borderColor: errorEndTime ? "red" : secondaryText,
-                      paddingVertical: 8,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name="calendar-outline"
-                    size={16}
-                    color={text}
-                    style={{ marginHorizontal: 8 }}
-                  />
-                  <TextInput
-                    style={{
-                      flex: 1,
-                      color: text,
-                      paddingLeft: 4,
-                      paddingVertical: 4,
-                    }}
-                    placeholder="HH:mm"
-                    placeholderTextColor={secondaryText}
-                    value={endTime}
-                    onChangeText={handleEndTimeChange}
-                    keyboardType="numeric"
-                    maxLength={5}
-                  />
-                </View>
-                {errorEndTime && (
-                  <Text style={{ color: "red", marginBottom: 8 }}>
-                    {errorEndTime}
-                  </Text>
-                )}
-              </View>
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "flex-end",
-                marginTop: 24,
-              }}
-            >
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[
-                  styles.button,
-                  {
-                    backgroundColor: "#666",
-                    marginRight: 8,
-                    paddingHorizontal: 20,
-                  },
-                ]}
+                style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>
+                <Text style={styles.cancelButtonText}>
                   {t("cancel") || "Cancelar"}
                 </Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={[
-                  styles.button,
-                  {
-                    backgroundColor: tint,
-                    paddingHorizontal: 20,
-                  },
-                ]}
+                style={[styles.modalButton, styles.saveButton]}
                 onPress={handleAddTask}
               >
-                <Text style={{ color: "#fff", fontWeight: "600" }}>
-                  {t("save") || "Salvar"}
+                <Text style={styles.saveButtonText}>
+                  {t("save") || "Guardar"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -467,85 +351,139 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
   },
   dateText: {
+    fontSize: 15,
     fontWeight: "600",
-    fontSize: 16,
+  },
+  addButton: {
+    backgroundColor: "#2563eb",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    minWidth: 110,
+    borderRadius: 8,
+  },
+  addButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    marginRight: 6,
+    fontSize: 14,
+  },
+  addButtonIcon: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  summaryCard: {
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10,
+  },
+  summaryText: {
+    color: "#fff",
+    fontWeight: "600",
   },
   calendar: {
+    borderRadius: 12,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#888",
-    borderRadius: 8,
-    overflow: "hidden",
+  },
+  list: {
+    flex: 1,
+    marginTop: 8,
   },
   sectionHeader: {
+    fontSize: 16,
     fontWeight: "700",
-    fontSize: 18,
-    marginTop: 12,
+    marginTop: 8,
     marginBottom: 6,
   },
-  taskCard: {
+  taskItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 16,
-    marginVertical: 6,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 8,
   },
-  taskText: {
+  taskName: {
+    fontSize: 15,
     fontWeight: "600",
-    fontSize: 16,
   },
-  timeText: {
-    fontWeight: "400",
-    fontSize: 14,
-    marginTop: 2,
-  },
-  deleteText: {
-    fontSize: 22,
-    fontWeight: "bold",
+  taskTime: {
+    fontSize: 13,
+    marginTop: 3,
   },
   emptyTitle: {
+    fontSize: 16,
     fontWeight: "700",
-    fontSize: 22,
   },
   emptyText: {
-    fontWeight: "500",
-    fontSize: 16,
+    fontSize: 14,
+    marginTop: 4,
   },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    padding: 24,
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.35)",
   },
-  modalContent: {
-    borderRadius: 12,
-    padding: 20,
+  modalCard: {
+    width: "90%",
+    maxWidth: 420,
+    padding: 18,
+    borderRadius: 16,
   },
   modalTitle: {
+    fontSize: 18,
     fontWeight: "700",
-    fontSize: 20,
-    marginBottom: 16,
-    textAlign: "center",
+    marginBottom: 12,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
   },
-  pickerLabel: {
+  errorText: {
+    color: "#ef4444",
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 12,
+    gap: 10,
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+  cancelButton: {
+    backgroundColor: "#e5e7eb",
+  },
+  cancelButtonText: {
+    color: "#111827",
     fontWeight: "600",
-    marginBottom: 4,
   },
-  button: {
-    borderRadius: 8,
-    paddingVertical: 12,
+  saveButton: {
+    backgroundColor: "#2563eb",
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });

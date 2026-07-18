@@ -5,12 +5,12 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useAuth } from "../../hooks/AuthContext";
 
@@ -46,7 +46,7 @@ export default function EcrãLogin() {
       Alert.alert(
         t("error") || "Erro",
         t("fillUsernamePassword") ||
-          "Preencha o nome de utilizador e a palavra-passe."
+          "Preencha o nome de utilizador e a palavra-passe.",
       );
       return;
     }
@@ -60,7 +60,7 @@ export default function EcrãLogin() {
     ];
 
     const userEncontrado = users.find(
-      (user) => user.username === utilizador && user.password === palavraPasse
+      (user) => user.username === utilizador && user.password === palavraPasse,
     );
 
     if (userEncontrado) {
@@ -76,9 +76,21 @@ export default function EcrãLogin() {
       Alert.alert(
         t("error") || "Erro",
         t("incorrectUsernamePassword") ||
-          "Nome de utilizador ou palavra-passe incorretos."
+          "Nome de utilizador ou palavra-passe incorretos.",
       );
     }
+  };
+
+  const entrarComoDemo = () => {
+    setUtilizador("demo");
+    setPalavraPasse("demo");
+    setAuthState({
+      id: "demo",
+      name: "Demo",
+      username: "demo",
+      signedIn: true,
+    });
+    router.replace("/home");
   };
 
   const aoCriarConta = () => {
@@ -173,6 +185,15 @@ export default function EcrãLogin() {
         </Text>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        style={[styles.demoButton, { borderColor }]}
+        onPress={entrarComoDemo}
+      >
+        <Text style={[styles.demoButtonText, { color: textColor }]}>
+          Entrar como demo
+        </Text>
+      </TouchableOpacity>
+
       <TouchableOpacity onPress={aoCriarConta} style={styles.registerLink}>
         <Text style={[styles.registerText, { color: textColor }]}>
           {t("noAccount") || "Ainda não tens conta? Criar conta"}
@@ -216,7 +237,18 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingVertical: 12,
     alignItems: "center",
+    marginBottom: 12,
+  },
+  demoButton: {
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingVertical: 10,
+    alignItems: "center",
     marginBottom: 16,
+  },
+  demoButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   buttonText: {
     fontSize: 16,

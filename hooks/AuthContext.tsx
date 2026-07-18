@@ -1,12 +1,12 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useEffect,
-} from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 type AuthState = {
   id: string;
@@ -22,10 +22,10 @@ type AuthContextType = {
 };
 
 const defaultState: AuthState = {
-  id: "",
-  name: "",
-  username: "",
-  signedIn: false,
+  id: "demo",
+  name: "Demo",
+  username: "demo",
+  signedIn: true,
 };
 
 export const AuthContext = createContext<AuthContextType>({
@@ -38,12 +38,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [authState, setAuthState] = useState<AuthState>(defaultState);
   const router = useRouter();
 
+  const safeReplace = (path: string) => {
+    try {
+      router.replace(path);
+    } catch {
+      // ignore during initial render
+    }
+  };
+
   useEffect(() => {
     const loadAuthState = async () => {
       const userData = await AsyncStorage.getItem("auth");
       if (userData) {
-        setAuthState(JSON.parse(userData));
+        const parsed = JSON.parse(userData) as AuthState;
+        setAuthState(parsed);
+        return;
       }
+
+      await AsyncStorage.setItem("auth", JSON.stringify(defaultState));
+      setAuthState(defaultState);
     };
     loadAuthState();
   }, []);
@@ -55,8 +68,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     await AsyncStorage.removeItem("auth");
-    setAuthState(defaultState);
-    router.replace("/auth/login");
+    setAuthState({ ...defaultState, signedIn: false });
+    safeReplace("/auth/login");
   };
 
   return (

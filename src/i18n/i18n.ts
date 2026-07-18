@@ -1,10 +1,9 @@
-import i18n from "i18next";
-import type { LanguageDetectorModule } from "i18next"; // IMPORTAR COMO TIPO SEPARADO
-import { initReactI18next } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createInstance, type LanguageDetectorModule } from "i18next";
+import { initReactI18next } from "react-i18next";
 
-import pt from "@/src/locales/pt.json";
 import en from "@/src/locales/en.json";
+import pt from "@/src/locales/pt.json";
 
 const LANGUAGE_STORAGE_KEY = "appLanguage";
 
@@ -36,6 +35,8 @@ const languageDetector = {
     } catch {}
   },
 } as unknown as LanguageDetectorModule;
+
+const i18n = createInstance();
 
 i18n
   .use(languageDetector)

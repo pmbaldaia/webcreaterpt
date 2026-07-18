@@ -1,11 +1,11 @@
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { demoProjects, type DemoProject } from "@/src/data/demoContent";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   FlatList,
   Image,
-  ImageSourcePropType,
   Modal,
   StyleSheet,
   Text,
@@ -14,58 +14,9 @@ import {
 } from "react-native";
 import { WebView } from "react-native-webview";
 
-type Project = {
-  id: string;
-  titleKey: string;
-  descriptionKey: string;
-  imageUrl: ImageSourcePropType;
-  url: string;
-};
+type Project = DemoProject;
 
-const projects: Project[] = [
-  {
-    id: "1",
-    titleKey: "projects.marysWorld.title",
-    descriptionKey: "projects.marysWorld.description",
-    imageUrl: require("@/assets/images/projects/marysworld.png"),
-    url: "https://marysworld.pt",
-  },
-  {
-    id: "2",
-    titleKey: "projects.maulihandmade.title",
-    descriptionKey: "projects.maulihandmade.description",
-    imageUrl: require("@/assets/images/projects/maulihandmade.png"),
-    url: "https://maulihandmade.com",
-  },
-  {
-    id: "3",
-    titleKey: "projects.qChef.title",
-    descriptionKey: "projects.qChef.description",
-    imageUrl: require("@/assets/images/projects/qchef.png"),
-    url: "https://qchef.pt",
-  },
-  {
-    id: "4",
-    titleKey: "projects.vanessaKloset.title",
-    descriptionKey: "projects.vanessaKloset.description",
-    imageUrl: require("@/assets/images/projects/vanessakloset.png"),
-    url: "https://vanessakloset.pt",
-  },
-  {
-    id: "5",
-    titleKey: "projects.mimuKidsStore.title",
-    descriptionKey: "projects.mimuKidsStore.description",
-    imageUrl: require("@/assets/images/projects/mimukidsstore.png"),
-    url: "https://mimukidsstore.pt",
-  },
-  {
-    id: "6",
-    titleKey: "projects.jafversatil.title",
-    descriptionKey: "projects.jafversatil.description",
-    imageUrl: require("@/assets/images/projects/jafversatil.png"),
-    url: "https://jafversatil.pt",
-  },
-];
+const projects = demoProjects;
 
 export default function ProjectsScreen() {
   const { t } = useTranslation();
@@ -74,26 +25,24 @@ export default function ProjectsScreen() {
   const cardBackground = background || "#fff";
 
   const [containerWidth, setContainerWidth] = useState(0);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [webviewUrl, setWebviewUrl] = useState<string | null>(null);
+
   const gutter = 15;
   const minCardWidth = 280;
-  const [webviewUrl, setWebviewUrl] = useState<string | null>(null);
 
   const numColumns = Math.max(
     1,
-    Math.floor((containerWidth + gutter) / (minCardWidth + gutter))
+    Math.floor((containerWidth + gutter) / (minCardWidth + gutter)),
   );
   const cardWidth = Math.max(
     minCardWidth,
-    (containerWidth - (numColumns - 1) * gutter) / numColumns
+    (containerWidth - (numColumns - 1) * gutter) / numColumns,
   );
 
   const renderProject = useCallback(
     ({ item, index }: { item: Project; index: number }) => {
       const isFirstInRow = index % numColumns === 0;
-
-      const handlePress = () => {
-        setWebviewUrl(item.url);
-      };
 
       return (
         <View
@@ -117,19 +66,30 @@ export default function ProjectsScreen() {
           <Text style={[styles.description, { color: text }]} numberOfLines={2}>
             {t(item.descriptionKey)}
           </Text>
-          <TouchableOpacity
-            style={[styles.ctaButton, { backgroundColor: text }]}
-            onPress={handlePress}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.ctaButtonText, { color: cardBackground }]}>
-              {t("projects.visitSite")}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.ctaButton, { backgroundColor: text }]}
+              onPress={() => setSelectedProject(item)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.ctaButtonText, { color: cardBackground }]}>
+                Detalhes
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.ctaButton, { backgroundColor: "#2563eb" }]}
+              onPress={() => setWebviewUrl(item.url)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.ctaButtonText, { color: "#fff" }]}>
+                Abrir
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       );
     },
-    [cardWidth, cardBackground, numColumns, text, t]
+    [cardWidth, cardBackground, numColumns, t, text],
   );
 
   return (
@@ -137,9 +97,7 @@ export default function ProjectsScreen() {
       style={[styles.container, { backgroundColor: background }]}
       onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
     >
-      <Text style={[styles.header, { color: text }]}>
-        {t("projects.title")}
-      </Text>
+      <Text style={[styles.header, { color: text }]}>Projetos e campanhas</Text>
       <FlatList
         data={projects}
         keyExtractor={(item) => item.id}
@@ -151,73 +109,74 @@ export default function ProjectsScreen() {
             ? { justifyContent: "flex-start", marginBottom: gutter }
             : undefined
         }
-        contentContainerStyle={{ paddingHorizontal: 0, paddingBottom: 20 }}
+        contentContainerStyle={{ paddingHorizontal: 0, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       />
 
-      {webviewUrl && (
-        <Modal
-          animationType="slide"
-          visible={true}
-          onRequestClose={() => setWebviewUrl(null)}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={Boolean(selectedProject)}
+        onRequestClose={() => setSelectedProject(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectedProject(null)}
         >
-          <View style={{ flex: 1 }}>
-            {/* Header do modal */}
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                margin: 10,
-              }}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => undefined}
+            style={[styles.modalCard, { backgroundColor: cardBackground }]}
+          >
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setSelectedProject(null)}
             >
-              <TouchableOpacity
-                onPress={() => setWebviewUrl(null)}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: "#000",
-                  paddingVertical: 6,
-                  paddingHorizontal: 10,
-                  borderRadius: 6,
-                  shadowColor: "#000",
-                  shadowOpacity: 0.2,
-                  shadowRadius: 3,
-                  shadowOffset: { width: 0, height: 2 },
-                  elevation: 3,
-                }}
-              >
-                <Ionicons
-                  name="arrow-back"
-                  size={16}
-                  color="#fff"
-                  style={{ marginRight: 4 }}
-                />
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontWeight: "600",
-                    fontSize: 13,
-                  }}
-                >
-                  {t("projects.back")}
+              <Ionicons name="close" size={20} color={text} />
+            </TouchableOpacity>
+            {selectedProject && (
+              <>
+                <Text style={[styles.modalTitle, { color: text }]}>
+                  {t(selectedProject.titleKey)}
                 </Text>
-              </TouchableOpacity>
+                <Text style={[styles.modalText, { color: text }]}>
+                  {t(selectedProject.descriptionKey)}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.ctaButton, { backgroundColor: "#2563eb" }]}
+                  onPress={() => setWebviewUrl(selectedProject.url)}
+                >
+                  <Text style={[styles.ctaButtonText, { color: "#fff" }]}>
+                    Abrir site de demonstração
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
-              <Text style={{ color: "#000", fontSize: 16, fontWeight: "600" }}>
-                {new Date().toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </Text>
-            </View>
-
-            <WebView source={{ uri: webviewUrl }} style={{ flex: 1 }} />
+      <Modal
+        animationType="slide"
+        visible={Boolean(webviewUrl)}
+        onRequestClose={() => setWebviewUrl(null)}
+      >
+        <View style={{ flex: 1 }}>
+          <View style={styles.webviewHeader}>
+            <TouchableOpacity
+              onPress={() => setWebviewUrl(null)}
+              style={styles.backButton}
+            >
+              <Ionicons name="arrow-back" size={16} color="#fff" />
+              <Text style={styles.backButtonText}>Voltar</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
-      )}
+          {webviewUrl ? (
+            <WebView source={{ uri: webviewUrl }} style={{ flex: 1 }} />
+          ) : null}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -243,18 +202,40 @@ const styles = StyleSheet.create({
   image: { width: "100%", height: 160, borderRadius: 10, marginBottom: 10 },
   title: { fontSize: 18, fontWeight: "600", marginBottom: 4 },
   description: { fontSize: 14, lineHeight: 20 },
+  metaText: { fontSize: 12, marginTop: 4, opacity: 0.8 },
+  buttonRow: { flexDirection: "row", gap: 8, marginTop: 12 },
   ctaButton: {
-    marginTop: 12,
-    paddingVertical: 5,
-    paddingHorizontal: 12,
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
   },
-  ctaButtonText: { fontSize: 16, fontWeight: "600" },
+  ctaButtonText: { fontSize: 14, fontWeight: "600" },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  modalCard: { borderRadius: 16, padding: 18, paddingTop: 24 },
+  closeButton: { position: "absolute", top: 10, right: 10, padding: 6 },
+  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 8 },
+  modalText: { fontSize: 14, lineHeight: 20, marginBottom: 6 },
+  webviewHeader: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#111827",
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: "#2563eb",
+  },
+  backButtonText: { color: "#fff", marginLeft: 4, fontWeight: "600" },
 });

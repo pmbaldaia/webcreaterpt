@@ -1,20 +1,24 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-  FlatList,
-  Pressable,
-} from "react-native";
-import { Tabs, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { SafeAreaView } from "react-native-safe-area-context"; 
-import { useAuth } from "../../hooks/AuthContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
-import { useTranslation } from "react-i18next";
+import { demoNotifications } from "@/src/data/demoContent";
+import i18n from "@/src/i18n/i18n";
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs, useRouter } from "expo-router";
+import React, { useRef, useState } from "react";
+import {
+    Animated,
+    FlatList,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import {
+    SafeAreaView,
+    useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { useAuth } from "../../hooks/AuthContext";
 
 export const TAB_CONFIG = {
   home: { icon: "home", labelKey: "home" },
@@ -26,11 +30,30 @@ export const TAB_CONFIG = {
 type TabName = keyof typeof TAB_CONFIG;
 
 function TopBar() {
-  const { t } = useTranslation();
   const { authState, logout } = useAuth();
   const router = useRouter();
 
   const [modalVisible, setModalVisible] = useState(false);
+  const notificationScale = useRef(new Animated.Value(1)).current;
+  const logoutScale = useRef(new Animated.Value(1)).current;
+
+  const animateNotification = (toValue: number) => {
+    Animated.spring(notificationScale, {
+      toValue,
+      useNativeDriver: true,
+      speed: 18,
+      bounciness: 6,
+    }).start();
+  };
+
+  const animateLogout = (toValue: number) => {
+    Animated.spring(logoutScale, {
+      toValue,
+      useNativeDriver: true,
+      speed: 18,
+      bounciness: 6,
+    }).start();
+  };
 
   const handleLogout = () => {
     logout();
@@ -42,21 +65,13 @@ function TopBar() {
   const textColor = useThemeColor({}, "text");
   const cardBackground = useThemeColor({}, "background");
 
-  const notifications = [
-    {
-      id: "1",
-      title: t("newMessageFrom", { name: "João" }) || "Nova mensagem de João",
-    },
-    { id: "2", title: t("updateAvailable") || "Atualização disponível" },
-    {
-      id: "3",
-      title: t("eventTomorrowAt", { time: "15h" }) || "Evento amanhã às 15h",
-    },
-  ];
+  const notifications = demoNotifications;
+  const translate = (key: string, fallback = "") =>
+    (i18n.t(key, { defaultValue: fallback }) as string) || fallback;
 
   const welcomeText = authState?.signedIn
-    ? `${t("welcome")} ${authState.name}`
-    : t("welcome");
+    ? `${translate("welcome", "Bem-vindo")} ${authState.name}`
+    : translate("welcome", "Bem-vindo");
 
   return (
     <View
@@ -78,31 +93,44 @@ function TopBar() {
       </View>
 
       <View style={styles.iconGroup}>
-        <TouchableOpacity
-          onPress={() => setModalVisible(true)}
-          style={{ marginRight: 14 }}
-          accessibilityLabel={t("notifications")}
+        <Animated.View
+          style={{ transform: [{ scale: notificationScale }], marginRight: 14 }}
         >
-          <View>
-            <Ionicons
-              name="notifications-outline"
-              size={24}
-              color={textColor}
-            />
-            <View style={[styles.badge, { backgroundColor: "#007AFF" }]}>
-              <Text style={styles.badgeText}>3</Text>
+          <TouchableOpacity
+            onPress={() => setModalVisible(true)}
+            onPressIn={() => animateNotification(0.92)}
+            onPressOut={() => animateNotification(1)}
+            onHoverIn={() => animateNotification(1.04) as any}
+            onHoverOut={() => animateNotification(1) as any}
+            accessibilityLabel={translate("notifications", "Notificações")}
+          >
+            <View>
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={textColor}
+              />
+              <View style={[styles.badge, { backgroundColor: "#007AFF" }]}>
+                <Text style={styles.badgeText}>{notifications.length}</Text>
+              </View>
             </View>
-          </View>
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </Animated.View>
 
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          activeOpacity={0.7}
-          accessibilityLabel={t("logout")}
-        >
-          <Ionicons name="log-out-outline" size={26} color={textColor} />
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: logoutScale }] }}>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            onPressIn={() => animateLogout(0.92)}
+            onPressOut={() => animateLogout(1)}
+            onHoverIn={() => animateLogout(1.04) as any}
+            onHoverOut={() => animateLogout(1) as any}
+            activeOpacity={0.7}
+            accessibilityLabel={translate("logout", "Sair")}
+          >
+            <Ionicons name="log-out-outline" size={26} color={textColor} />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       <Modal
@@ -121,13 +149,13 @@ function TopBar() {
             <TouchableOpacity
               onPress={() => setModalVisible(false)}
               style={styles.closeIconButton}
-              accessibilityLabel={t("closeModal")}
+              accessibilityLabel={translate("closeModal", "Fechar")}
             >
               <Ionicons name="close" size={24} color={textColor} />
             </TouchableOpacity>
 
             <Text style={[styles.modalTitle, { color: textColor }]}>
-              {t("notifications")}
+              {translate("notifications", "Notificações")}
             </Text>
 
             {notifications.length === 0 ? (
@@ -138,7 +166,9 @@ function TopBar() {
                   color="#999"
                   style={{ marginBottom: 12 }}
                 />
-                <Text style={styles.emptyText}>{t("noNotifications")}</Text>
+                <Text style={styles.emptyText}>
+                  {translate("noNotifications", "Sem notificações")}
+                </Text>
               </View>
             ) : (
               <FlatList
@@ -158,11 +188,26 @@ function TopBar() {
                       color="#007AFF"
                       style={{ marginRight: 12 }}
                     />
-                    <Text
-                      style={[styles.notificationText, { color: textColor }]}
-                    >
-                      {item.title}
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[styles.notificationText, { color: textColor }]}
+                      >
+                        {item.title}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.notificationSubtext,
+                          { color: borderColor },
+                        ]}
+                      >
+                        {item.subtitle}
+                      </Text>
+                      <Text
+                        style={[styles.notificationTime, { color: "#64748b" }]}
+                      >
+                        {item.time}
+                      </Text>
+                    </View>
                   </View>
                 )}
               />
@@ -175,8 +220,9 @@ function TopBar() {
 }
 
 export default function Layout() {
-  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const translate = (key: string, fallback = "") =>
+    (i18n.t(key, { defaultValue: fallback }) as string) || fallback;
 
   const activeTint = useThemeColor({}, "tabIconSelected");
   const inactiveTint = useThemeColor({}, "tabIconDefault");
@@ -199,7 +245,7 @@ export default function Layout() {
             tabBarIcon: ({ color, size }) => (
               <Ionicons name={icon} size={size} color={color} />
             ),
-            tabBarLabel: t(labelKey),
+            tabBarLabel: translate(labelKey, labelKey),
             tabBarActiveTintColor: activeTint,
             tabBarInactiveTintColor: inactiveTint,
             tabBarStyle: {
@@ -306,7 +352,17 @@ const styles = StyleSheet.create({
   },
   notificationText: {
     fontSize: 16,
+    fontWeight: "600",
     flexShrink: 1,
+  },
+  notificationSubtext: {
+    fontSize: 13,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  notificationTime: {
+    fontSize: 12,
+    marginTop: 6,
   },
   emptyContainer: {
     alignItems: "center",
